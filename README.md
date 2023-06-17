@@ -35,15 +35,13 @@ return msg;
 #include <WiFi.h>
 #include <PubSubClient.h>
 #define BUILTIN_LED 2
-#include<max6675.h>
-int CSK=13;
-int CS=12;
-int SO=14;
-MAX6675 termopar(CSK,CS,SO);
+#include "DHTesp.h"
+const int DHT_PIN = 15;
+DHTesp dhtSensor;
 // Update these with values suitable for your network.
 
-const char* ssid = "Eventos_FCQeI";
-const char* password = "2023FCQEI";
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
 const char* mqtt_server = "52.57.167.175";
 String username_mqtt="educatronicosiot";
 String password_mqtt="12345678";
@@ -131,21 +129,21 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+  dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
 }
 
 void loop() {
 
-int temperatura;
- temperatura=termopar.readCelsius();
-delay(1000);
 
+delay(1000);
+TempAndHumidity  data = dhtSensor.getTempAndHumidity();
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
 
   unsigned long now = millis();
-  if (now - lastMsg > 30000) {
+  if (now - lastMsg > 2000) {
     lastMsg = now;
     //++value;
     //snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", value);
@@ -155,8 +153,8 @@ delay(1000);
     doc["DEVICE"] = "ESP32";
     //doc["Anho"] = 2022;
     //doc["Empresa"] = "Educatronicos";
-    doc["TEMPERATURA"] = temperatura;
-    doc["AMPERAJE"] = random(0);
+    doc["TEMPERATURA"] = String(data.temperature, 1);
+    doc["HUMEDAD"] = String(data.humidity, 1);
    
 
     String output;
@@ -165,7 +163,8 @@ delay(1000);
 
     Serial.print("Publish message: ");
     Serial.println(output);
-    client.publish("Tamulbaout", output.c_str());
+    Serial.println(output.c_str());
+    client.publish("Diplomado", output.c_str());
   }
 }
 ```
